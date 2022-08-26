@@ -1,6 +1,6 @@
 ## Goal
 
-Goal of the project is a multi artist collaboration project that shares the revenus of token sales:
+Goal of the project is a multi artist collaboration project that shares the revenues of token sales:
 
 1. 70% for Artists
 1. 20% into a Pool, claimable by Artists
