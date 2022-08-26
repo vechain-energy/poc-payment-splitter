@@ -7,7 +7,6 @@ Goal of the project is a multi artist collaboration project that shares the reve
 1. 8% locked in Contract until Collectors claim
 1. 2% stay in Contract, claimable by the owner
 
-
 ## Reponsibilities
 
 1. Another contract mints the Art
@@ -33,6 +32,8 @@ Goal of the project is a multi artist collaboration project that shares the reve
    * contract
    * an implementation of a payment splitter
 
+## Process
+
 ```mermaid
 sequenceDiagram
     participant Collector
@@ -55,7 +56,7 @@ sequenceDiagram
     Marketplace->>NFTContract: send $VET + TokenID + Buyer
     NFTContract->>Royalty splitter: forward $VET + TokenID
 
-    note over Royalty splitter: https://docs.openzeppelin.com/contracts/2.x/api/payment#PullPayment
+    note over Royalty splitter: https://docs.openzeppelin.com/contracts/4.x/api/finance
     Royalty splitter-->>Artist: % share
     Royalty splitter-->>Pool: % share
     Royalty splitter-->>Admin: % share
@@ -71,3 +72,11 @@ sequenceDiagram
     Royalty splitter-->NFTContract: totalSupply()
     Royalty splitter-->>Artist: $VET / totalSupply() for each Artist
 ```
+
+
+## Links
+
+1. Discord-Discussion: https://discord.com/channels/948215669672001596/948215669672001599/1012598084552892477
+1. Payment-Splitter at OpenZeppelin: https://docs.openzeppelin.com/contracts/4.x/api/finance
+1. NFT Template at OpenZeppelin: https://docs.openzeppelin.com/contracts/4.x/erc721
+1. NFT Royalty Standard at OpenZeppelin: https://docs.openzeppelin.com/contracts/4.x/api/interfaces#IERC2981
