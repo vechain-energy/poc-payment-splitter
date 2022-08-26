@@ -29,10 +29,12 @@ Goal of the project is a multi artist collaboration project that shares the reve
    * receiving part of the revenue
 1. NFTContract
    * a standard NFT Contract
-   * with extension to instruct the Royalty splitter
+   * with extension to remember initial minter
+   * all token related data is stored within this contract   
 1. Royalty splitter
    * contract
    * an implementation of a payment splitter
+   * accesses NFTContract to read token related information (minter, owner)
 
 ## Process
 
@@ -50,7 +52,7 @@ sequenceDiagram
     note over Artist, Royalty splitter: Minting the art
     Artist->>NFTContract: mint new token
     NFTContract-->>NFTContract: mint new token
-    NFTContract-->Royalty splitter: register tokenId with Artist address
+    NFTContract-->>NFTContract: remember Artist address for tokenId
 
     note over Marketplace, Royalty splitter: Minting Event at a Marketplace
     note right of Marketplace: Marketplace puts tokens<br/>from NFTContract on sale<br/>as a minting event
@@ -58,7 +60,8 @@ sequenceDiagram
     Marketplace->>NFTContract: send $VET + TokenID + Buyer
     NFTContract->>Royalty splitter: forward $VET + TokenID
 
-    note over Royalty splitter: https://docs.openzeppelin.com/contracts/4.x/api/finance
+    note over Royalty splitter: https://docs.openzeppelin.com/contracts/2.x/api/payment#PullPayment
+    Royalty splitter-->NFTContract: access Artist address for TokenId
     Royalty splitter-->>Artist: % share
     Royalty splitter-->>Pool: % share
     Royalty splitter-->>Admin: % share
@@ -73,6 +76,7 @@ sequenceDiagram
     Marketplace->>Royalty splitter: $VET Payment
     Royalty splitter-->NFTContract: totalSupply()
     Royalty splitter-->>Artist: $VET / totalSupply() for each Artist
+
 ```
 
 
