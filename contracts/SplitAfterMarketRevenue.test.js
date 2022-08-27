@@ -137,24 +137,25 @@ describe('AfterMarket', () => {
     })
   })
 
-  describe.skip('VET: release(payee)', () => {
+  describe('VET: release(payee)', () => {
     it('supports releasing to an added payee', async () => {
-      await ethers.provider.send('hardhat_setBalance', [contracts.SplitAfterMarketRevenue.address, '0xffffffffff'])
+      await ethers.provider.send('hardhat_setBalance', [contracts.SplitAfterMarketRevenue.address, BigNumber.from(100).toHexString()])
+      await ethers.provider.send('hardhat_setBalance', [users.user3.address, '0x0'])
 
-      await contracts.SplitAfterMarketRevenue.addPayee(users.user2.address, 2)
-      await contracts.SplitAfterMarketRevenue.connect(users.user2).release(users.user4.address)
+      await contracts.SplitAfterMarketRevenue.addPayee(users.user3.address, 2)
+      await contracts.SplitAfterMarketRevenue.release(users.user3.address)
 
-      const balanceUser = await ethers.provider.getBalance(users.user2.address)
-      expect(balanceUser).toEqual(BigNumber.from('0xffffffffff'))
+      const balanceUser = await ethers.provider.getBalance(users.user3.address)
+      expect(balanceUser).toEqual(BigNumber.from(100))
     })
 
     it('respects shares for the payees', async () => {
-      await ethers.provider.send('hardhat_setBalance', [contracts.SplitAfterMarketRevenue.address, BigNumber.from(100)])
-      await ethers.provider.send('hardhat_setBalance', [users.user2.address, '0x1'])
+      await ethers.provider.send('hardhat_setBalance', [contracts.SplitAfterMarketRevenue.address, BigNumber.from(100).toHexString()])
+      await ethers.provider.send('hardhat_setBalance', [users.user2.address, '0x0'])
 
       await contracts.SplitAfterMarketRevenue.addPayee(users.user2.address, 2)
       await contracts.SplitAfterMarketRevenue.addPayee(users.user3.address, 2)
-      await contracts.SplitAfterMarketRevenue.connect(users.user2).release(users.user2.address)
+      await contracts.SplitAfterMarketRevenue.release(users.user2.address)
 
       const balanceUser = await ethers.provider.getBalance(users.user2.address)
       expect(balanceUser).toEqual(BigNumber.from(50))
