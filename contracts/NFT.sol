@@ -18,6 +18,7 @@ contract NFT is Initializable, ERC721Upgradeable, ERC721EnumerableUpgradeable, E
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     CountersUpgradeable.Counter private _tokenIdCounter;
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
+    mapping(uint256 => address) public minterForTokenId;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -52,6 +53,9 @@ contract NFT is Initializable, ERC721Upgradeable, ERC721EnumerableUpgradeable, E
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
+        
+        // remember sender as the original minter
+        minterForTokenId[tokenId] = msg.sender;
     }
 
     function _beforeTokenTransfer(address from, address to, uint256 tokenId)

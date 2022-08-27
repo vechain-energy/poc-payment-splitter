@@ -45,6 +45,16 @@ describe('NFT', () => {
       expect(tokenId2).toEqual(BigNumber.from(1))
     })
 
+    it('remembers original minter of a token', async () => {
+      const minterRole = await contracts.NFT.MINTER_ROLE()
+      await contracts.NFT.grantRole(minterRole, users.user1.address)
+
+      const { events } = await (await contracts.NFT.connect(users.user1).safeMint(users.user2.address, '')).wait()
+      const { tokenId } = events.find(({ event }) => event === 'Transfer').args
+
+      const minterAddress = await contracts.NFT.minterForTokenId(tokenId)
+      expect(minterAddress).toEqual(users.user1.address)
+    })
   })
 })
 
