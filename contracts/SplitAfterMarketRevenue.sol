@@ -8,6 +8,13 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeab
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
 
+/**
+ * @dev contract for splitting payments between multiple participants
+ *
+ * uses the example of the PaymentSplitter with the additional ability to add/remove payee
+ * release of the received payments is also shielded to be used by an admin and the payee themself
+ */
+
 contract SplitAfterMarketRevenue is
     Initializable,
     AccessControlUpgradeable,
