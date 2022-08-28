@@ -191,6 +191,10 @@ contract PaymentSplitter is
         emit PayeeRemoved(account, sharesToRemove);
     }
 
+    /**
+     * @dev Getter for the number of accounts in the contract
+     * can be used with payee(index) to compile a list of addresses
+     */
     function payeeCount() public view returns (uint256) {
         return _payees.length();
     }
