@@ -24,12 +24,15 @@ import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeab
  * - totalShares()
  * - shares(address)
  *
- * release() or releaseTokem(tokenAddress) will send current contracts balance to payees respecting their share
+ * releasing will send current contracts balance to payees respecting their share:
+ * - release()
+ * - releaseTokem(tokenAddress)
  *
  * caveat:
  * - releases do not know the history, they only pay according to the current share at time of call
  * - rounding errors may leave some dust in the contract, should be too small to care
- * - the number of payees is limited by gas fees, releases with a lot of payee will fail (did not test, up to 500 should be safe, maybe fails at >1.000?)
+ * - the number of payees is limited by gas fees
+ *   releases with a lot of payee will fail (did not test, up to 500 should be safe, maybe fails at >1.000?)
  */
 
 contract PaymentSplitter is
