@@ -13,9 +13,26 @@ import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeab
  *
  * uses the example of the PaymentSplitter with the additional ability to add/remove payee
  * release of the received payments is also shielded to be used by an admin and the payee themself
+ *
+ * payees can be managed with:
+ * - addPayee(address, shares)
+ * - removePayee(address)
+ *
+ * information is available by:
+ * - payeeCount()
+ * - payee(index)
+ * - totalShares()
+ * - shares(address)
+ *
+ * release() or releaseTokem(tokenAddress) will send current contracts balance to payees respecting their share
+ *
+ * caveat:
+ * - releases do not know the history, they only pay according to the current share at time of call
+ * - rounding errors may leave some dust in the contract, should be too small to care
+ *
  */
 
-contract SplitAfterMarketRevenue is
+contract PaymentSplitter is
     Initializable,
     AccessControlUpgradeable,
     UUPSUpgradeable
@@ -36,15 +53,9 @@ contract SplitAfterMarketRevenue is
     event PaymentReceived(address from, uint256 amount);
 
     uint256 private _totalShares;
-    uint256 private _totalReleased;
 
     mapping(address => uint256) private _shares;
-    mapping(address => uint256) private _released;
     EnumerableSetUpgradeable.AddressSet _payees;
-
-    mapping(IERC20Upgradeable => uint256) private _erc20TotalReleased;
-    mapping(IERC20Upgradeable => mapping(address => uint256))
-        private _erc20Released;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -87,48 +98,10 @@ contract SplitAfterMarketRevenue is
     }
 
     /**
-     * @dev Getter for the total amount of Ether already released.
-     */
-    function totalReleased() public view returns (uint256) {
-        return _totalReleased;
-    }
-
-    /**
-     * @dev Getter for the total amount of `token` already released. `token` should be the address of an IERC20
-     * contract.
-     */
-    function totalReleased(IERC20Upgradeable token)
-        public
-        view
-        returns (uint256)
-    {
-        return _erc20TotalReleased[token];
-    }
-
-    /**
      * @dev Getter for the amount of shares held by an account.
      */
     function shares(address account) public view returns (uint256) {
         return _shares[account];
-    }
-
-    /**
-     * @dev Getter for the amount of Ether already released to a payee.
-     */
-    function released(address account) public view returns (uint256) {
-        return _released[account];
-    }
-
-    /**
-     * @dev Getter for the amount of `token` tokens already released to a payee. `token` should be the address of an
-     * IERC20 contract.
-     */
-    function released(IERC20Upgradeable token, address account)
-        public
-        view
-        returns (uint256)
-    {
-        return _erc20Released[token][account];
     }
 
     /**
@@ -139,47 +112,19 @@ contract SplitAfterMarketRevenue is
     }
 
     /**
-     * @dev Getter for the amount of payee's releasable Ether.
-     */
-    function releasable(address account) public view returns (uint256) {
-        uint256 totalReceived = address(this).balance + totalReleased();
-        return _pendingPayment(account, totalReceived, released(account));
-    }
-
-    /**
-     * @dev Getter for the amount of payee's releasable `token` tokens. `token` should be the address of an
-     * IERC20 contract.
-     */
-    function releasable(IERC20Upgradeable token, address account)
-        public
-        view
-        returns (uint256)
-    {
-        uint256 totalReceived = token.balanceOf(address(this)) +
-            totalReleased(token);
-        return
-            _pendingPayment(account, totalReceived, released(token, account));
-    }
-
-    /**
      * @dev Triggers a transfer to `account` of the amount of Ether they are owed, according to their percentage of the
      * total shares and their previous withdrawals.
      */
-    function release(address payable account) public {
-        if (msg.sender != account) {
-            _checkRole(ADMIN_ROLE);
+    function release() public onlyRole(ADMIN_ROLE) {
+        uint256 balance = address(this).balance;
+        uint256 payeeCount = payeeCount();
+        uint256 amountPerShare = balance / _totalShares;
+        for (uint256 index; index < payeeCount; index += 1) {
+            address payable account = payable(_payees.at(index));
+            uint256 amount = amountPerShare * _shares[account];
+            AddressUpgradeable.sendValue(account, amount);
+            emit PaymentReleased(account, amount);
         }
-        require(_shares[account] > 0, "PaymentSplitter: account has no shares");
-
-        uint256 payment = releasable(account);
-
-        require(payment != 0, "PaymentSplitter: account is not due payment");
-
-        _released[account] += payment;
-        _totalReleased += payment;
-
-        AddressUpgradeable.sendValue(account, payment);
-        emit PaymentReleased(account, payment);
     }
 
     /**
@@ -187,34 +132,17 @@ contract SplitAfterMarketRevenue is
      * percentage of the total shares and their previous withdrawals. `token` must be the address of an IERC20
      * contract.
      */
-    function releaseToken(IERC20Upgradeable token, address account) public {
-        if (msg.sender != account) {
-            _checkRole(ADMIN_ROLE);
+    function releaseToken(IERC20Upgradeable token) public onlyRole(ADMIN_ROLE) {
+        uint256 balance = token.balanceOf(address(this));
+        uint256 payeeCount = payeeCount();
+        uint256 amountPerShare = balance / _totalShares;
+        for (uint256 index; index < payeeCount; index += 1) {
+            address account = payable(_payees.at(index));
+            uint256 amount = amountPerShare * _shares[account];
+
+            SafeERC20Upgradeable.safeTransfer(token, account, amount);
+            emit ERC20PaymentReleased(token, account, amount);
         }
-        require(_shares[account] > 0, "PaymentSplitter: account has no shares");
-
-        uint256 payment = releasable(token, account);
-
-        require(payment != 0, "PaymentSplitter: account is not due payment");
-
-        _erc20Released[token][account] += payment;
-        _erc20TotalReleased[token] += payment;
-
-        SafeERC20Upgradeable.safeTransfer(token, account, payment);
-        emit ERC20PaymentReleased(token, account, payment);
-    }
-
-    /**
-     * @dev internal logic for computing the pending payment of an `account` given the token historical balances and
-     * already released amounts.
-     */
-    function _pendingPayment(
-        address account,
-        uint256 totalReceived,
-        uint256 alreadyReleased
-    ) private view returns (uint256) {
-        return
-            (totalReceived * _shares[account]) / _totalShares - alreadyReleased;
     }
 
     /**
@@ -222,7 +150,7 @@ contract SplitAfterMarketRevenue is
      * @param account The address of the payee to add.
      * @param shares_ The number of shares owned by the payee.
      */
-    function addPayee(address account, uint256 shares_)
+    function addPayee(address payable account, uint256 shares_)
         public
         onlyRole(ADMIN_ROLE)
     {
