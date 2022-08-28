@@ -59,7 +59,7 @@ contract PaymentSplitter is
     uint256 private _totalShares;
 
     mapping(address => uint256) private _shares;
-    EnumerableSetUpgradeable.AddressSet _payees;
+    EnumerableSetUpgradeable.AddressSet private _payees;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
