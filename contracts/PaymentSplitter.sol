@@ -29,7 +29,7 @@ import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeab
  * caveat:
  * - releases do not know the history, they only pay according to the current share at time of call
  * - rounding errors may leave some dust in the contract, should be too small to care
- *
+ * - the number of payees is limited by gas fees, releases with a lot of payee will fail (did not test, up to 500 should be safe, maybe fails at >1.000?)
  */
 
 contract PaymentSplitter is
