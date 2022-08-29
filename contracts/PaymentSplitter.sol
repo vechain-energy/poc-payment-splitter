@@ -26,12 +26,21 @@ import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeab
  * - shares(address)
  *
  * releasing will send current contracts balance to payees respecting their share:
- * - release(releaseShares, releaseSharesBase)
- * - releaseTokem(tokenAddress, releaseShares, releaseSharesBase)
- *   the total balance is sent out in shares too, divided by the releaseSharesBase multiplied with the releaseShares, examples
- *       *  releaseShares = 1, releaseSharesBase = 1 sends out 100% of balance
- *       *  releaseShares = 1, releaseSharesBase = 2 sends out 50% of balance
- *       *  releaseShares = 1, releaseSharesBase = 100 sends out 1% of balance
+ *   100% balance in one transaction:
+ *      - release()
+ *      - releaseToken(tokenAddress)
+ * 
+ *   a calculated portion of the balance in one transaction:
+ *      - releaseInShares(releaseShares, releaseSharesBase)
+ *      - releaseTokenInShares(tokenAddress, releaseShares, releaseSharesBase)
+ *        the total balance is sent out in shares too, divided by the releaseSharesBase multiplied with the releaseShares, examples
+ *            - releaseShares = 1, releaseSharesBase = 1 sends out 100% of balance
+ *            - releaseShares = 1, releaseSharesBase = 2 sends out 50% of balance
+ *            - releaseShares = 1, releaseSharesBase = 100 sends out 1% of balance
+ * 
+ *   a fixed amount in one transaction:
+ *      - releaseBalance(balance)
+ *      - releaseToken(tokenAddress, balance)
  *
  * caveat:
  * - releases do not know the history, they only pay according to the current balance and shares at time of call
@@ -120,13 +129,30 @@ contract PaymentSplitter is
     }
 
     /**
-     * @dev Triggers a transfer to `account` of the amount of Ether they are owed, according to their percentage of the
-     * total shares and their previous withdrawals.
+     * @dev Triggers a transfer to `account` of the amount of Ether they are owed, according to their shares
+     */
+    function release() public {
+        uint256 balance = address(this).balance;
+        releaseBalance(balance);
+    }
+
+    /**
+     * @dev Triggers a transfer to `account` of the amount of `token` tokens they are owed, according to their
+     * percentage of the total shares. `token` must be the address of an IERC20 contract.
      * @param releaseShares Shares of the total balance to release.
      * @param releaseSharesBase The number of total shares the release is calculated on.
      */
-    function release(uint256 releaseShares, uint256 releaseSharesBase) public onlyRole(ADMIN_ROLE) {
+    function releaseInShares(uint256 releaseShares, uint256 releaseSharesBase) public {
         uint256 balance = address(this).balance / releaseSharesBase * releaseShares;
+        releaseBalance(balance);
+    }
+
+    /**
+     * @dev Triggers a transfer to `account` of the amount of Ether they are owed, according to their shares
+     * @param balance Balance to release.
+     */
+    function releaseBalance(uint256 balance) public onlyRole(ADMIN_ROLE) {
+        require(balance <= address(this).balance, "balance must be less or equal than token balance");
         uint256 payeeCount = payeeCount();
         uint256 amountPerShare = balance / _totalShares;
         for (uint256 index; index < payeeCount; index += 1) {
@@ -139,14 +165,34 @@ contract PaymentSplitter is
 
     /**
      * @dev Triggers a transfer to `account` of the amount of `token` tokens they are owed, according to their
-     * percentage of the total shares and their previous withdrawals. `token` must be the address of an IERC20
-     * contract.
+     * percentage of the total shares. `token` must be the address of an IERC20 contract.
+     * @param token The token address of the IERC20 contract.
+     */
+    function releaseToken(IERC20Upgradeable token) public {
+        uint256 balance = token.balanceOf(address(this));
+        releaseTokenBalance(token, balance);
+    }
+
+    /**
+     * @dev Triggers a transfer to `account` of the amount of `token` tokens they are owed, according to their
+     * percentage of the total shares. `token` must be the address of an IERC20 contract.
      * @param token The token address of the IERC20 contract.
      * @param releaseShares Shares of the total balance to release.
      * @param releaseSharesBase The number of total shares the release is calculated on.
      */
-    function releaseToken(IERC20Upgradeable token, uint256 releaseShares, uint256 releaseSharesBase) public onlyRole(ADMIN_ROLE) {
+    function releaseTokenInShares(IERC20Upgradeable token, uint256 releaseShares, uint256 releaseSharesBase) public {
         uint256 balance = token.balanceOf(address(this)) / releaseSharesBase * releaseShares;
+        releaseTokenBalance(token, balance);
+    }
+    
+    /**
+     * @dev Triggers a transfer to `account` of the amount of `token` tokens they are owed, according to their
+     * percentage of the total shares. `token` must be the address of an IERC20 contract.
+     * @param token The token address of the IERC20 contract.
+     * @param balance Balance to release.
+     */
+    function releaseTokenBalance(IERC20Upgradeable token, uint256 balance) public onlyRole(ADMIN_ROLE) {
+        require(balance <= token.balanceOf(address(this)), "balance must be less or equal than token balance");
         uint256 payeeCount = payeeCount();
         uint256 amountPerShare = balance / _totalShares;
         for (uint256 index; index < payeeCount; index += 1) {

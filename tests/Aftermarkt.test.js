@@ -27,7 +27,7 @@ describe('Example Payment Flow', () => {
   it('receives 100 VET and pays 33% to each artist', async () => {
     await ethers.provider.send('hardhat_setBalance', [contracts.PaymentSplitter.address, BigNumber.from(100).toHexString()])
 
-    await contracts.PaymentSplitter.release(1, 1)
+    await contracts.PaymentSplitter.release()
 
     const balanceArtist1 = await ethers.provider.getBalance(users.artist1.address)
     expect(balanceArtist1).toEqual(BigNumber.from(Math.round(100 / 3)))
@@ -43,18 +43,32 @@ describe('Example Payment Flow', () => {
   it('receive 2x100 VET, respect payouts in between', async () => {
     await ethers.provider.send('hardhat_setBalance', [contracts.PaymentSplitter.address, BigNumber.from(100).toHexString()])
 
-    await contracts.PaymentSplitter.release(1, 1)
+    await contracts.PaymentSplitter.release()
     const balanceArtist3 = await ethers.provider.getBalance(users.artist3.address)
     expect(balanceArtist3).toEqual(BigNumber.from(Math.round(100 / 3)))
 
     await ethers.provider.send('hardhat_setBalance', [contracts.PaymentSplitter.address, BigNumber.from(100).toHexString()])
 
-    await contracts.PaymentSplitter.release(1, 1)
+    await contracts.PaymentSplitter.release()
     const balanceArtist2 = await ethers.provider.getBalance(users.artist2.address)
     expect(balanceArtist2).toEqual(BigNumber.from(Math.round(100 / 3) * 2))
 
   })
 
+
+
+  it('pays out multiple steps correctly', async () => {
+    const revenue = 30000
+    await ethers.provider.send('hardhat_setBalance', [contracts.PaymentSplitter.address, BigNumber.from(revenue).toHexString()])
+
+    for (let payout = 1; payout < 20; payout += 1) {
+      await contracts.PaymentSplitter.releaseBalance(90)
+      const balanceArtist3 = await ethers.provider.getBalance(users.artist3.address)
+      const balanceArtist2 = await ethers.provider.getBalance(users.artist2.address)
+      expect(balanceArtist2).toEqual(BigNumber.from(30 * payout))
+      expect(balanceArtist3).toEqual(BigNumber.from(30 * payout))
+    }
+  })
 
 })
 
