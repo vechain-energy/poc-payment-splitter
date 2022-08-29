@@ -118,9 +118,11 @@ contract PaymentSplitter is
     /**
      * @dev Triggers a transfer to `account` of the amount of Ether they are owed, according to their percentage of the
      * total shares and their previous withdrawals.
+     * @param releaseShares Shares of the total balance to release.
+     * @param releaseSharesBase The number of total shares the release is calculated on.
      */
-    function release() public onlyRole(ADMIN_ROLE) {
-        uint256 balance = address(this).balance;
+    function release(uint256 releaseShares, uint256 releaseSharesBase) public onlyRole(ADMIN_ROLE) {
+        uint256 balance = address(this).balance / releaseSharesBase * releaseShares;
         uint256 payeeCount = payeeCount();
         uint256 amountPerShare = balance / _totalShares;
         for (uint256 index; index < payeeCount; index += 1) {
@@ -135,9 +137,12 @@ contract PaymentSplitter is
      * @dev Triggers a transfer to `account` of the amount of `token` tokens they are owed, according to their
      * percentage of the total shares and their previous withdrawals. `token` must be the address of an IERC20
      * contract.
+     * @param token The token address of the IERC20 contract.
+     * @param releaseShares Shares of the total balance to release.
+     * @param releaseSharesBase The number of total shares the release is calculated on.
      */
-    function releaseToken(IERC20Upgradeable token) public onlyRole(ADMIN_ROLE) {
-        uint256 balance = token.balanceOf(address(this));
+    function releaseToken(IERC20Upgradeable token, uint256 releaseShares, uint256 releaseSharesBase) public onlyRole(ADMIN_ROLE) {
+        uint256 balance = token.balanceOf(address(this)) / releaseSharesBase * releaseShares;
         uint256 payeeCount = payeeCount();
         uint256 amountPerShare = balance / _totalShares;
         for (uint256 index; index < payeeCount; index += 1) {

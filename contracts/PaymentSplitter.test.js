@@ -50,12 +50,12 @@ describe('PaymentSplitter', () => {
     })
   })
 
-  describe('VIP-180 Tokens: releaseToken()', () => {
+  describe('VIP-180 Tokens: releaseToken(tokenAddress, releaseShares, releaseSharesBase)', () => {
     beforeEach(async () => {
       const VTHO = await ethers.getContractFactory('VTHO')
       contracts.vtho = await VTHO.deploy()
 
-      contracts.vtho.mint(users.owner.address, 10000)
+      contracts.vtho.mint(users.owner.address, 10000000)
     })
 
     it('supports receiving VIP-180 Tokens', async () => {
@@ -65,17 +65,30 @@ describe('PaymentSplitter', () => {
     it('supports releasing to payees', async () => {
       contracts.vtho.transfer(contracts.PaymentSplitter.address, 100)
       await contracts.PaymentSplitter.addPayee(users.user2.address, 2)
-      await contracts.PaymentSplitter.connect(users.owner).releaseToken(contracts.vtho.address)
+      await contracts.PaymentSplitter.connect(users.owner).releaseToken(contracts.vtho.address, 1, 1)
 
       const balanceUser = await contracts.vtho.balanceOf(users.user2.address)
       expect(balanceUser).toEqual(BigNumber.from(100))
+    })
+
+    it('respects releaseShares on the balance', async () => {
+      contracts.vtho.transfer(contracts.PaymentSplitter.address, 100000)
+      await contracts.PaymentSplitter.addPayee(users.user1.address, 75)
+      await contracts.PaymentSplitter.addPayee(users.user2.address, 25)
+      await contracts.PaymentSplitter.connect(users.owner).releaseToken(contracts.vtho.address, 1, 100)
+
+      const balanceUser1 = await contracts.vtho.balanceOf(users.user1.address)
+      expect(balanceUser1).toEqual(BigNumber.from(750))
+
+      const balanceUser2 = await contracts.vtho.balanceOf(users.user2.address)
+      expect(balanceUser2).toEqual(BigNumber.from(250))
     })
 
     it('respects shares for the payees', async () => {
       contracts.vtho.transfer(contracts.PaymentSplitter.address, 100)
       await contracts.PaymentSplitter.addPayee(users.user1.address, 75)
       await contracts.PaymentSplitter.addPayee(users.user2.address, 25)
-      await contracts.PaymentSplitter.connect(users.owner).releaseToken(contracts.vtho.address)
+      await contracts.PaymentSplitter.connect(users.owner).releaseToken(contracts.vtho.address, 1, 1)
 
       const balanceUser1 = await contracts.vtho.balanceOf(users.user1.address)
       expect(balanceUser1).toEqual(BigNumber.from(75))
@@ -88,12 +101,12 @@ describe('PaymentSplitter', () => {
       contracts.vtho.transfer(contracts.PaymentSplitter.address, 100)
       await contracts.PaymentSplitter.addPayee(users.user3.address, 75)
       await contracts.PaymentSplitter.addPayee(users.user4.address, 25)
-      await contracts.PaymentSplitter.connect(users.owner).releaseToken(contracts.vtho.address)
+      await contracts.PaymentSplitter.connect(users.owner).releaseToken(contracts.vtho.address, 1, 1)
 
       contracts.vtho.transfer(contracts.PaymentSplitter.address, 100)
       await contracts.PaymentSplitter.addPayee(users.user5.address, 25)
       await contracts.PaymentSplitter.removePayee(users.user3.address)
-      await contracts.PaymentSplitter.connect(users.owner).releaseToken(contracts.vtho.address)
+      await contracts.PaymentSplitter.connect(users.owner).releaseToken(contracts.vtho.address, 1, 1)
 
       const balanceUser3 = await contracts.vtho.balanceOf(users.user3.address)
       expect(balanceUser3).toEqual(BigNumber.from(75 + 0))
@@ -110,7 +123,7 @@ describe('PaymentSplitter', () => {
       const adminRole = await contracts.PaymentSplitter.ADMIN_ROLE()
       contracts.vtho.transfer(contracts.PaymentSplitter.address, 100)
       await contracts.PaymentSplitter.addPayee(users.user3.address, 2)
-      await expect(contracts.PaymentSplitter.connect(users.user3).releaseToken(contracts.vtho.address)).rejects.toThrow(`is missing role ${adminRole}`)
+      await expect(contracts.PaymentSplitter.connect(users.user3).releaseToken(contracts.vtho.address, 1, 1)).rejects.toThrow(`is missing role ${adminRole}`)
     })
 
     it('supports ADMIN_ROLE triggering a release', async () => {
@@ -119,7 +132,7 @@ describe('PaymentSplitter', () => {
 
       contracts.vtho.transfer(contracts.PaymentSplitter.address, 100)
       await contracts.PaymentSplitter.addPayee(users.user2.address, 2)
-      await contracts.PaymentSplitter.connect(users.user3).releaseToken(contracts.vtho.address)
+      await contracts.PaymentSplitter.connect(users.user3).releaseToken(contracts.vtho.address, 1, 1)
 
       const balanceUser = await contracts.vtho.balanceOf(users.user2.address)
       expect(balanceUser).toEqual(BigNumber.from(100))
@@ -145,7 +158,7 @@ describe('PaymentSplitter', () => {
     it('supports releasing to payees', async () => {
       await ethers.provider.send('hardhat_setBalance', [contracts.PaymentSplitter.address, BigNumber.from(100).toHexString()])
       await contracts.PaymentSplitter.addPayee(users.user2.address, 2)
-      await contracts.PaymentSplitter.connect(users.owner).release()
+      await contracts.PaymentSplitter.connect(users.owner).release(1, 1)
 
       const balanceUser = await ethers.provider.getBalance(users.user2.address)
       expect(balanceUser).toEqual(BigNumber.from(100))
@@ -155,7 +168,20 @@ describe('PaymentSplitter', () => {
       await ethers.provider.send('hardhat_setBalance', [contracts.PaymentSplitter.address, BigNumber.from(100).toHexString()])
       await contracts.PaymentSplitter.addPayee(users.user1.address, 75)
       await contracts.PaymentSplitter.addPayee(users.user2.address, 25)
-      await contracts.PaymentSplitter.connect(users.owner).release()
+      await contracts.PaymentSplitter.connect(users.owner).release(1, 1)
+
+      const balanceUser1 = await ethers.provider.getBalance(users.user1.address)
+      expect(balanceUser1).toEqual(BigNumber.from(75))
+
+      const balanceUser2 = await ethers.provider.getBalance(users.user2.address)
+      expect(balanceUser2).toEqual(BigNumber.from(25))
+    })
+
+    it('respects releaseShares on the balance', async () => {
+      await ethers.provider.send('hardhat_setBalance', [contracts.PaymentSplitter.address, BigNumber.from(10000).toHexString()])
+      await contracts.PaymentSplitter.addPayee(users.user1.address, 75)
+      await contracts.PaymentSplitter.addPayee(users.user2.address, 25)
+      await contracts.PaymentSplitter.connect(users.owner).release(1, 100)
 
       const balanceUser1 = await ethers.provider.getBalance(users.user1.address)
       expect(balanceUser1).toEqual(BigNumber.from(75))
@@ -168,12 +194,12 @@ describe('PaymentSplitter', () => {
       await ethers.provider.send('hardhat_setBalance', [contracts.PaymentSplitter.address, BigNumber.from(100).toHexString()])
       await contracts.PaymentSplitter.addPayee(users.user3.address, 75)
       await contracts.PaymentSplitter.addPayee(users.user4.address, 25)
-      await contracts.PaymentSplitter.connect(users.owner).release()
+      await contracts.PaymentSplitter.connect(users.owner).release(1, 1)
 
       await ethers.provider.send('hardhat_setBalance', [contracts.PaymentSplitter.address, BigNumber.from(100).toHexString()])
       await contracts.PaymentSplitter.addPayee(users.user5.address, 25)
       await contracts.PaymentSplitter.removePayee(users.user3.address)
-      await contracts.PaymentSplitter.connect(users.owner).release()
+      await contracts.PaymentSplitter.connect(users.owner).release(1, 1)
 
       const balanceUser3 = await ethers.provider.getBalance(users.user3.address)
       expect(balanceUser3).toEqual(BigNumber.from(75 + 0))
@@ -190,7 +216,7 @@ describe('PaymentSplitter', () => {
       await ethers.provider.send('hardhat_setBalance', [users.user3.address, '0xffffffffffffff'])
       const adminRole = await contracts.PaymentSplitter.ADMIN_ROLE()
       await contracts.PaymentSplitter.addPayee(users.user3.address, 2)
-      await expect(contracts.PaymentSplitter.connect(users.user3).release()).rejects.toThrow(`is missing role ${adminRole}`)
+      await expect(contracts.PaymentSplitter.connect(users.user3).release(1, 1)).rejects.toThrow(`is missing role ${adminRole}`)
     })
 
     it('supports ADMIN_ROLE triggering a release', async () => {
@@ -200,7 +226,7 @@ describe('PaymentSplitter', () => {
 
       await ethers.provider.send('hardhat_setBalance', [contracts.PaymentSplitter.address, BigNumber.from(100).toHexString()])
       await contracts.PaymentSplitter.addPayee(users.user2.address, 2)
-      await contracts.PaymentSplitter.connect(users.user3).release()
+      await contracts.PaymentSplitter.connect(users.user3).release(1, 1)
 
       const balanceUser = await ethers.provider.getBalance(users.user2.address)
       expect(balanceUser).toEqual(BigNumber.from(100))
