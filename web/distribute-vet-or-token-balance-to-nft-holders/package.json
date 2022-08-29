@@ -1,0 +1,34 @@
+{
+  "name": "distribute-vet-or-token-balance-to-nft-holders",
+  "version": "1.0.0",
+  "description": "Read all token owners and distribute balance of VET or a token contract equally between them",
+  "keywords": [],
+  "main": "src/index.js",
+  "dependencies": {
+    "@vechain.energy/use-vechain": "0.10.0",
+    "@vechain/connex": "2.0.9",
+    "@vechain/ethers": "4.0.27-5",
+    "antd": "4.20.0",
+    "bent": "7.3.12",
+    "react": "18.0.0",
+    "react-dom": "18.0.0",
+    "react-scripts": "4.0.0",
+    "thor-devkit": "2.0.4"
+  },
+  "devDependencies": {
+    "@babel/runtime": "7.13.8",
+    "typescript": "4.1.3"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject"
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ]
+}

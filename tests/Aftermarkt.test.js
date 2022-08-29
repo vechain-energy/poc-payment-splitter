@@ -55,7 +55,6 @@ describe('Example Payment Flow', () => {
 
   })
 
-
 })
 
 async function getContractWithProxy(contractName) {

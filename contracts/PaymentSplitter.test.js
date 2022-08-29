@@ -12,24 +12,7 @@ beforeEach(async function () {
   contracts.PaymentSplitter = await getContractWithProxy('PaymentSplitter')
 })
 
-describe('AfterMarket', () => {
-  describe('Royalty', () => {
-    it('NFT supports royalty extension', async () => {
-      const royaltySetterRole = await contracts.NFT.ROYALTY_SETTER_ROLE()
-      await contracts.NFT.grantRole(royaltySetterRole, users.user1.address)
-
-      await contracts.NFT.connect(users.user1).setDefaultRoyalty(contracts.PaymentSplitter.address, 1)
-      const tokenId = await createToken(users.user1.address, 'uri')
-      const [royaltyAddress] = await contracts.NFT.royaltyInfo(tokenId, 1000)
-      expect(royaltyAddress).toEqual(contracts.PaymentSplitter.address)
-    })
-
-    it('only ROYALTY_SETTER_ROLE can set new royalty', async () => {
-      const royaltySetterRole = await contracts.NFT.ROYALTY_SETTER_ROLE()
-      await expect(contracts.NFT.setDefaultRoyalty(contracts.PaymentSplitter.address, 1)).rejects.toThrow(`is missing role ${royaltySetterRole}`)
-    })
-  })
-
+describe('PaymentSplitter', () => {
   describe('addPayee(address, shares)', () => {
     it('addPayee(address, shares) is correctly executed', async () => {
       await contracts.PaymentSplitter.addPayee(users.user2.address, 2)

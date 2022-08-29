@@ -55,7 +55,36 @@ describe('NFT', () => {
       const minterAddress = await contracts.NFT.minterForTokenId(tokenId)
       expect(minterAddress).toEqual(users.user1.address)
     })
+
+    it('keeps track of the number of tokens created by each minter of a token', async () => {
+      const minterRole = await contracts.NFT.MINTER_ROLE()
+      await contracts.NFT.grantRole(minterRole, users.user1.address)
+
+      const { events } = await (await contracts.NFT.connect(users.user1).safeMint(users.user2.address, '')).wait()
+      const { tokenId } = events.find(({ event }) => event === 'Transfer').args
+
+      const minterAddress = await contracts.NFT.minterForTokenId(tokenId)
+      expect(minterAddress).toEqual(users.user1.address)
+    })
   })
+
+  describe('Royalty', () => {
+    it('supports royalty extension', async () => {
+      const royaltySetterRole = await contracts.NFT.ROYALTY_SETTER_ROLE()
+      await contracts.NFT.grantRole(royaltySetterRole, users.user1.address)
+
+      await contracts.NFT.connect(users.user1).setDefaultRoyalty(users.user3.address, 1)
+      const tokenId = await createToken(users.user1.address, 'uri')
+      const [royaltyAddress] = await contracts.NFT.royaltyInfo(tokenId, 1000)
+      expect(royaltyAddress).toEqual(users.user3.address)
+    })
+
+    it('allows only ROYALTY_SETTER_ROLE to set new royalty', async () => {
+      const royaltySetterRole = await contracts.NFT.ROYALTY_SETTER_ROLE()
+      await expect(contracts.NFT.setDefaultRoyalty(users.user3.address, 1)).rejects.toThrow(`is missing role ${royaltySetterRole}`)
+    })
+  })
+
 })
 
 async function createToken (...args) {
