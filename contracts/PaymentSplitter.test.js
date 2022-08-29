@@ -115,8 +115,8 @@ describe('PaymentSplitter', () => {
       })
 
       it('supports ADMIN_ROLE triggering a release', async () => {
-        const admimRole = await contracts.PaymentSplitter.ADMIN_ROLE()
-        await contracts.PaymentSplitter.grantRole(admimRole, users.user3.address)
+        const adminRole = await contracts.PaymentSplitter.ADMIN_ROLE()
+        await contracts.PaymentSplitter.grantRole(adminRole, users.user3.address)
 
         contracts.vtho.transfer(contracts.PaymentSplitter.address, 100)
         await contracts.PaymentSplitter.addPayee(users.user2.address, 2)
@@ -204,8 +204,8 @@ describe('PaymentSplitter', () => {
       })
 
       it('supports ADMIN_ROLE triggering a release', async () => {
-        const admimRole = await contracts.PaymentSplitter.ADMIN_ROLE()
-        await contracts.PaymentSplitter.grantRole(admimRole, users.user3.address)
+        const adminRole = await contracts.PaymentSplitter.ADMIN_ROLE()
+        await contracts.PaymentSplitter.grantRole(adminRole, users.user3.address)
 
         contracts.vtho.transfer(contracts.PaymentSplitter.address, 100)
         await contracts.PaymentSplitter.addPayee(users.user2.address, 2)
@@ -284,6 +284,14 @@ describe('PaymentSplitter', () => {
         expect(balanceUser4).toEqual(BigNumber.from(25 + 50))
       })
 
+      it('rejects if balance is bigger than available', async () => {
+        const adminRole = await contracts.PaymentSplitter.ADMIN_ROLE()
+        await contracts.PaymentSplitter.grantRole(adminRole, users.user3.address)
+
+        contracts.vtho.transfer(contracts.PaymentSplitter.address, 100)
+        await contracts.PaymentSplitter.addPayee(users.user3.address, 2)
+        await expect(contracts.PaymentSplitter.connect(users.user3).releaseTokenBalance(contracts.vtho.address, 101)).rejects.toThrow("balance must be less or equal than token balance")
+      })
 
       it('rejects none-admin-user to trigger release', async () => {
         const adminRole = await contracts.PaymentSplitter.ADMIN_ROLE()
@@ -293,8 +301,8 @@ describe('PaymentSplitter', () => {
       })
 
       it('supports ADMIN_ROLE triggering a release', async () => {
-        const admimRole = await contracts.PaymentSplitter.ADMIN_ROLE()
-        await contracts.PaymentSplitter.grantRole(admimRole, users.user3.address)
+        const adminRole = await contracts.PaymentSplitter.ADMIN_ROLE()
+        await contracts.PaymentSplitter.grantRole(adminRole, users.user3.address)
 
         contracts.vtho.transfer(contracts.PaymentSplitter.address, 100)
         await contracts.PaymentSplitter.addPayee(users.user2.address, 2)
@@ -376,8 +384,8 @@ describe('PaymentSplitter', () => {
 
       it('supports ADMIN_ROLE triggering a release', async () => {
         await ethers.provider.send('hardhat_setBalance', [users.user3.address, '0xffffffffffffff'])
-        const admimRole = await contracts.PaymentSplitter.ADMIN_ROLE()
-        await contracts.PaymentSplitter.grantRole(admimRole, users.user3.address)
+        const adminRole = await contracts.PaymentSplitter.ADMIN_ROLE()
+        await contracts.PaymentSplitter.grantRole(adminRole, users.user3.address)
 
         await ethers.provider.send('hardhat_setBalance', [contracts.PaymentSplitter.address, BigNumber.from(100).toHexString()])
         await contracts.PaymentSplitter.addPayee(users.user2.address, 2)
@@ -484,8 +492,8 @@ describe('PaymentSplitter', () => {
 
       it('supports ADMIN_ROLE triggering a release', async () => {
         await ethers.provider.send('hardhat_setBalance', [users.user3.address, '0xffffffffffffff'])
-        const admimRole = await contracts.PaymentSplitter.ADMIN_ROLE()
-        await contracts.PaymentSplitter.grantRole(admimRole, users.user3.address)
+        const adminRole = await contracts.PaymentSplitter.ADMIN_ROLE()
+        await contracts.PaymentSplitter.grantRole(adminRole, users.user3.address)
 
         await ethers.provider.send('hardhat_setBalance', [contracts.PaymentSplitter.address, BigNumber.from(100).toHexString()])
         await contracts.PaymentSplitter.addPayee(users.user2.address, 2)
@@ -568,6 +576,12 @@ describe('PaymentSplitter', () => {
         expect(balanceUser4).toEqual(BigNumber.from(25 + 50))
       })
 
+      it('rejects if balance is bigger than available', async () => {
+        await ethers.provider.send('hardhat_setBalance', [contracts.PaymentSplitter.address, BigNumber.from(100).toHexString()])
+        contracts.vtho.transfer(contracts.PaymentSplitter.address, 100)
+        await contracts.PaymentSplitter.addPayee(users.user3.address, 2)
+        await expect(contracts.PaymentSplitter.releaseBalance(101)).rejects.toThrow("balance must be less or equal than token balance")
+      })
 
       it('rejects none-admin-user to trigger release', async () => {
         await ethers.provider.send('hardhat_setBalance', [users.user3.address, '0xffffffffffffff'])
@@ -578,8 +592,8 @@ describe('PaymentSplitter', () => {
 
       it('supports ADMIN_ROLE triggering a release', async () => {
         await ethers.provider.send('hardhat_setBalance', [users.user3.address, '0xffffffffffffff'])
-        const admimRole = await contracts.PaymentSplitter.ADMIN_ROLE()
-        await contracts.PaymentSplitter.grantRole(admimRole, users.user3.address)
+        const adminRole = await contracts.PaymentSplitter.ADMIN_ROLE()
+        await contracts.PaymentSplitter.grantRole(adminRole, users.user3.address)
 
         await ethers.provider.send('hardhat_setBalance', [contracts.PaymentSplitter.address, BigNumber.from(100).toHexString()])
         await contracts.PaymentSplitter.addPayee(users.user2.address, 2)
