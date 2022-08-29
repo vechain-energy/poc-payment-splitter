@@ -26,8 +26,12 @@ import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeab
  * - shares(address)
  *
  * releasing will send current contracts balance to payees respecting their share:
- * - release()
- * - releaseTokem(tokenAddress)
+ * - release(releaseShares, releaseSharesBase)
+ * - releaseTokem(tokenAddress, releaseShares, releaseSharesBase)
+ *   the total balance is sent out in shares too, divided by the releaseSharesBase multiplied with the releaseShares, examples
+ *       *  releaseShares = 1, releaseSharesBase = 1 sends out 100% of balance
+ *       *  releaseShares = 1, releaseSharesBase = 2 sends out 50% of balance
+ *       *  releaseShares = 1, releaseSharesBase = 100 sends out 1% of balance
  *
  * caveat:
  * - releases do not know the history, they only pay according to the current share at time of call

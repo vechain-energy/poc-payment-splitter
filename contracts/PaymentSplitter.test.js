@@ -139,7 +139,7 @@ describe('PaymentSplitter', () => {
     })
   })
 
-  describe('VET: release()', () => {
+  describe('VET: release(releaseShares, releaseSharesBase)', () => {
 
     beforeEach(async () => {
       const VTHO = await ethers.getContractFactory('VTHO')
